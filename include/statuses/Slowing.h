@@ -9,8 +9,9 @@ public:
 	bool merge(const Status& other) override;
 	bool expired() const override;
 	bool blocksMovement() const override;
+	void onApply(Robot& robot) override;
 	void beginTurn() override;
-	void finishTurn(Robot& robot) override;
+	void finishTurn(Robot& robot, Field* field = nullptr, int id = -1) override;
 private:
 	int turns_;
 	bool affectedTurn_ = false;

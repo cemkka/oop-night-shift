@@ -1,4 +1,5 @@
 #include "statuses/Slowing.h"
+#include "Robot.h"
 #include <stdexcept>
 
 Slowing::Slowing(int turns) : turns_(turns) {
@@ -26,7 +27,9 @@ bool Slowing::blocksMovement() const { return !expired(); }
 
 void Slowing::beginTurn() { affectedTurn_ = true; }
 
-void Slowing::finishTurn(Robot&) {
+void Slowing::onApply(Robot& robot) { affectedTurn_ = robot.turnActive(); }
+
+void Slowing::finishTurn(Robot&, Field*, int) {
 	if (affectedTurn_ && turns_ > 0) {
 		--turns_;
 	}

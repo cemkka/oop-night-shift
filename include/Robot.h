@@ -56,7 +56,10 @@ public:
 	void restoreEnergy(int amount);
 	void gainExperience(int amount);
 	void finishTurn();
+	void finishTurn(Field* field, int id);
 	void beginTurn();
+	void endTurn();
+	bool turnActive() const;
 private:
 	friend class Field;
 	void setPlayer(bool player);
@@ -81,5 +84,6 @@ private:
 	std::vector<std::unique_ptr<Ability>> abilities_;
 	std::vector<std::unique_ptr<Status>> statuses_;
 	std::unique_ptr<Inventory> inventory_;
+	bool turnActive_ = false;
 	void removeExpiredStatuses();
 };

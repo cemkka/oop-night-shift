@@ -35,6 +35,7 @@ public:
 	bool spendEnergy(int id, int amount);
 	bool spendMovement(int id, int amount);
 	void beginTurn(int id);
+	void endTurn(int id);
 	void finishTurn(int id);
 	int row(int id) const;
 	int column(int id) const;

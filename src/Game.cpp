@@ -109,10 +109,12 @@ void Game::computerTurn() {
 				break;
 			}
 		}
+		field_.endTurn(id);
 	}
 }
 
 void Game::finishTurn() {
+	field_.endTurn(Robot::PlayerId);
 	computerTurn();
 	if (lost()) {
 		return;
@@ -128,6 +130,7 @@ void Game::finishTurn() {
 	field_.beginTurn(Robot::PlayerId);
 	++turn_;
 	field_.remember(Robot::PlayerId);
+	menu_.offerRewards();
 }
 
 bool Game::command(const std::string& input) {

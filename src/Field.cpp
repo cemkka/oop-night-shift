@@ -164,8 +164,10 @@ bool Field::spendEnergy(int id, int amount) { return robots_.at(id).spendEnergy(
 
 void Field::beginTurn(int id) { robots_.at(id).beginTurn(); }
 
+void Field::endTurn(int id) { robots_.at(id).endTurn(); }
+
 void Field::finishTurn(int id) {
-	robots_.at(id).finishTurn();
+	robots_.at(id).finishTurn(this, id);
 	removeDead();
 }
 

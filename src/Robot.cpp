@@ -238,9 +238,14 @@ int Robot::cappedAdd(int value, int amount) const {
 }
 
 void Robot::finishTurn() {
+	finishTurn(nullptr, NoRobotId);
+}
+
+void Robot::finishTurn(Field* field, int id) {
+	endTurn();
 	for (auto& value : statuses_) {
 		if (!value->expired()) {
-			value->finishTurn(*this);
+			value->finishTurn(*this, field, id);
 		}
 	}
 	removeExpiredStatuses();
@@ -253,6 +258,7 @@ void Robot::finishTurn() {
 }
 
 void Robot::beginTurn() {
+	turnActive_ = true;
 	remainingMovement_ = speed_;
 	if (inventory_) {
 		inventory_->beginTurn();
@@ -263,3 +269,7 @@ void Robot::beginTurn() {
 		}
 	}
 }
+
+void Robot::endTurn() { turnActive_ = false; }
+
+bool Robot::turnActive() const { return turnActive_; }

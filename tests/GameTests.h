@@ -20,5 +20,7 @@ private:
 	static void inventoryMenu();
 	static void displayModes();
 	static void displayCommand();
+	static void slowingTurns();
+	static void burningExperience();
 	static std::string runGame(Game& game, const std::string& input);
 };

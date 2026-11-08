@@ -208,7 +208,7 @@ void TestSuite::statuses() {
 	assert(!field.applyAbility(id, 0, 1, 6));
 	assert(field.robot(id).energy() == 10);
 	field.finishTurn(id);
-	assert(!field.robot(id).canMove());
+	assert(field.robot(id).canMove());
 	field.beginTurn(id);
 	field.finishTurn(id);
 	assert(field.robot(id).canMove());
@@ -910,6 +910,183 @@ void TestSuite::displayCommand() {
 	assert(output.find("Режим карты: Подсветка врагов") != std::string::npos);
 }
 
+void TestSuite::slowingTurns() {
+	Field field(12, 12, false);
+	field.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	field.addRobot(Robot(Robot::Side::Enemy), 4, 4);
+	field.addAbility(0, std::make_unique<Teleportation>());
+	field.beginTurn(0);
+	field.addCellStatus(1, 2, std::make_unique<Slowing>());
+	assert(field.move(0, 1, 2));
+	assert(!field.move(0, 1, 3));
+	assert(!field.applyAbility(0, 0, 1, 6));
+	assert(field.robot(0).energy() == 10);
+	field.endTurn(0);
+	assert(!field.robot(0).turnActive());
+	field.beginTurn(1);
+	field.endTurn(1);
+	field.finishTurn(1);
+	assert(!field.robot(0).canMove());
+	field.finishTurn(0);
+	assert(field.robot(0).canMove());
+	field.addStatus(0, std::make_unique<Slowing>());
+	field.finishTurn(0);
+	assert(!field.robot(0).canMove());
+	field.beginTurn(0);
+	assert(!field.move(0, 1, 3));
+	field.addStatus(0, std::make_unique<Slowing>());
+	field.endTurn(0);
+	field.finishTurn(0);
+	assert(!field.robot(0).canMove());
+	field.finishTurn(0);
+	assert(!field.robot(0).canMove());
+	field.beginTurn(0);
+	field.endTurn(0);
+	field.finishTurn(0);
+	assert(field.robot(0).canMove());
+	field.beginTurn(1);
+	field.addCellStatus(4, 5, std::make_unique<Slowing>());
+	assert(field.move(1, 4, 5));
+	assert(!field.teleport(1, 4, 6));
+	field.endTurn(1);
+	field.addStatus(1, std::make_unique<Slowing>());
+	field.finishTurn(1);
+	assert(!field.robot(1).canMove());
+	field.finishTurn(1);
+	assert(!field.robot(1).canMove());
+	field.beginTurn(1);
+	field.endTurn(1);
+	field.finishTurn(1);
+	assert(field.robot(1).canMove());
+	Game game(false);
+	assert(game.command("1"));
+	game.field_.takeDamage(2, 40);
+	game.field_.takeDamage(3, 40);
+	game.field_.addCellStatus(1, 2, std::make_unique<Slowing>());
+	assert(game.command("d"));
+	assert(!game.field().robot(0).canMove());
+	assert(game.command("e"));
+	assert(game.field().robot(0).turnActive());
+	assert(game.field().robot(0).canMove());
+	assert(game.command("d"));
+	assert(game.field().column(0) == 3);
+	Game enemy(false);
+	assert(enemy.command("1"));
+	enemy.field_.takeDamage(3, 40);
+	enemy.field_.spendEnergy(2, 10);
+	enemy.field_.addCellStatus(1, 6, std::make_unique<Slowing>());
+	enemy.computerTurn();
+	assert(!enemy.field().robot(2).turnActive());
+	assert(!enemy.field().robot(2).canMove());
+	enemy.field_.finishTurn(2);
+	assert(enemy.field().robot(2).canMove());
+}
+
+void TestSuite::burningExperience() {
+	Field field(12, 12, false);
+	field.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	int target = field.addRobot(Robot(Robot::Side::Enemy, 25), 1, 3);
+	RangedAttack ranged;
+	assert(ranged.apply(field, 0, 1, 3));
+	assert(field.robot(target).health() == 5);
+	field.addRobot(Robot(Robot::Side::Friendly), 2, 1);
+	RobotFactory factory(field, 8, 8, 1);
+	assert(factory.advance());
+	for (int row = 3; row < 7; ++row) {
+		for (int column = 1; column < 7; ++column) {
+			field.addRobot(Robot(Robot::Side::Friendly), row, column);
+		}
+	}
+	field.finishTurn(target);
+	assert(!field.robot(target).alive());
+	assert(field.robot(0).rank() == 2 && field.robot(0).experience() == 0);
+	for (int tick = 0; tick < 4; ++tick) {
+		field.finishTurn(target);
+	}
+	assert(field.robot(0).rank() == 2 && field.robot(0).experience() == 0);
+	Field ally(8, 8, false);
+	ally.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	ally.addRobot(Robot(Robot::Side::Friendly, 25), 1, 2);
+	assert(ranged.apply(ally, 0, 1, 2));
+	ally.finishTurn(1);
+	assert(!ally.robot(1).alive());
+	assert(ally.robot(0).rank() == 1 && ally.robot(0).experience() == 0);
+	Field cell(8, 8, false);
+	cell.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	cell.addRobot(Robot(Robot::Side::Enemy, 5), 3, 3);
+	cell.addCellStatus(3, 4, std::make_unique<Burning>(3));
+	assert(cell.move(1, 3, 4));
+	cell.finishTurn(1);
+	assert(!cell.robot(1).alive());
+	assert(cell.robot(0).rank() == 1 && cell.robot(0).experience() == 0);
+	Field dead(8, 8, false);
+	dead.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	dead.addRobot(Robot(Robot::Side::Enemy, 25), 1, 2);
+	assert(ranged.apply(dead, 0, 1, 2));
+	dead.takeDamage(0, 100);
+	dead.finishTurn(1);
+	assert(!dead.robot(1).alive());
+	assert(dead.robot(0).rank() == 1 && dead.robot(0).experience() == 0);
+	Field invalid(8, 8, false);
+	invalid.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	invalid.addRobot(Robot(Robot::Side::Enemy, 10), 2, 2);
+	invalid.addStatus(1, std::make_unique<Burning>(2, 999));
+	invalid.finishTurn(1);
+	invalid.finishTurn(1);
+	assert(!invalid.robot(1).alive() && invalid.robot(0).rank() == 1);
+	Field shield(8, 8, false);
+	shield.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	shield.addRobot(Robot(Robot::Side::Enemy, 5), 1, 2);
+	shield.addStatus(1, std::make_unique<Shield>(5));
+	shield.addStatus(1, std::make_unique<Burning>(1, 0));
+	shield.finishTurn(1);
+	assert(shield.robot(1).alive() && shield.robot(1).health() == 5);
+	assert(shield.robot(0).rank() == 1);
+	shield.takeDamage(1, 6);
+	shield.addStatus(1, std::make_unique<Burning>(1, 0));
+	shield.finishTurn(1);
+	assert(!shield.robot(1).alive() && shield.robot(0).rank() == 2);
+	Field merged(8, 8, false);
+	merged.addRobot(Robot(Robot::Side::Friendly), 1, 1);
+	merged.addRobot(Robot(Robot::Side::Friendly), 1, 2);
+	merged.addRobot(Robot(Robot::Side::Enemy, 10), 2, 2);
+	merged.addStatus(2, std::make_unique<Burning>(1, 0));
+	merged.addStatus(2, std::make_unique<Burning>(1, 1));
+	assert(merged.robot(2).statusCount() == 1);
+	merged.finishTurn(2);
+	merged.finishTurn(2);
+	assert(!merged.robot(2).alive());
+	assert(merged.robot(0).rank() == 1 && merged.robot(0).experience() == 0);
+	assert(merged.robot(1).rank() == 2);
+	int sourceLess = merged.addRobot(Robot(Robot::Side::Enemy, 10), 2, 3);
+	merged.addStatus(sourceLess, std::make_unique<Burning>(1, 0));
+	merged.addStatus(sourceLess, std::make_unique<Burning>(1));
+	merged.finishTurn(sourceLess);
+	merged.finishTurn(sourceLess);
+	assert(!merged.robot(sourceLess).alive() && merged.robot(0).rank() == 1);
+	int attributed = merged.addRobot(Robot(Robot::Side::Enemy, 10), 2, 4);
+	merged.addStatus(attributed, std::make_unique<Burning>(1));
+	merged.addStatus(attributed, std::make_unique<Burning>(1, 0));
+	merged.finishTurn(attributed);
+	merged.finishTurn(attributed);
+	assert(!merged.robot(attributed).alive() && merged.robot(0).rank() == 2);
+	Game rewards(false);
+	assert(rewards.command("4"));
+	rewards.field_.spendEnergy(2, 10);
+	rewards.field_.takeDamage(2, 15);
+	assert(rewards.field_.teleport(0, 1, 6));
+	assert(rewards.command("r"));
+	assert(rewards.command("1"));
+	assert(rewards.command("2 6"));
+	assert(!rewards.menu_.rewardsPending());
+	assert(rewards.command("e"));
+	assert(!rewards.field().robot(2).alive());
+	assert(rewards.field().robot(0).rank() == 2);
+	assert(rewards.menu_.rewardsPending());
+	assert(rewards.command("1"));
+	assert(!rewards.menu_.rewardsPending());
+}
+
 void TestSuite::run() {
 	ownership();
 	playerAbilities();
@@ -926,6 +1103,8 @@ void TestSuite::run() {
 	inventoryMenu();
 	displayModes();
 	displayCommand();
+	slowingTurns();
+	burningExperience();
 	std::cout << "All mandatory lab2 tests passed\n";
 }
 

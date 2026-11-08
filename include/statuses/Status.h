@@ -3,6 +3,7 @@
 #include <string>
 
 class Robot;
+class Field;
 
 class Status {
 public:
@@ -16,7 +17,7 @@ public:
 	virtual bool cancelsAbility();
 	virtual int absorbDamage(int amount);
 	virtual void beginTurn();
-	virtual void finishTurn(Robot& robot);
+	virtual void finishTurn(Robot& robot, Field* field = nullptr, int id = -1);
 protected:
 	static int saturatedAdd(int value, int amount);
 };
