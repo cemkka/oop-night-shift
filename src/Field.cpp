@@ -4,6 +4,7 @@
 #include "statuses/Overload.h"
 #include "statuses/Burning.h"
 #include "statuses/Shield.h"
+#include "statuses/ItemGrant.h"
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
@@ -23,11 +24,15 @@ Field::Field(int rows, int columns, bool populateStatuses)
 			cells_[row].emplace_back(passable);
 			int count = populateStatuses && passable ? countDistribution(generator_) : 0;
 			for (int index = 0; index < count; ++index) {
-				switch (std::uniform_int_distribution<int>(0, 3)(generator_)) {
+				switch (std::uniform_int_distribution<int>(0, 4)(generator_)) {
 				case 0: cells_[row][column].addStatus(std::make_unique<Slowing>()); break;
 				case 1: cells_[row][column].addStatus(std::make_unique<Overload>()); break;
 				case 2: cells_[row][column].addStatus(std::make_unique<Burning>(CellBurningDuration)); break;
 				case 3: cells_[row][column].addStatus(std::make_unique<Shield>(CellShieldProtection)); break;
+				case 4:
+					cells_[row][column].addStatus(std::make_unique<ItemGrant>(static_cast<Inventory::Item>(
+						std::uniform_int_distribution<int>(0, Inventory::ItemCount - 1)(generator_))));
+					break;
 				}
 			}
 		}
@@ -71,6 +76,7 @@ int Field::addRobot(Robot value, int row, int column) {
 		robotRows_.reserve(newCapacity);
 		robotColumns_.reserve(newCapacity);
 	}
+	value.setPlayer(id == Robot::PlayerId && value.side() == Robot::Side::Friendly);
 	robots_.push_back(std::move(value));
 	robotRows_.push_back(row);
 	robotColumns_.push_back(column);
@@ -95,6 +101,10 @@ const Robot& Field::robot(int id) const { return robots_.at(id); }
 
 bool Field::prepareAbility(int id) {
 	return id >= 0 && id < robotCount() && robots_[id].prepareAbility();
+}
+
+bool Field::useItem(int id, Inventory::Item item) {
+	return id == Robot::PlayerId && id < robotCount() && robots_[id].useItem(item);
 }
 
 void Field::addStatus(int id, std::unique_ptr<Status> value) {

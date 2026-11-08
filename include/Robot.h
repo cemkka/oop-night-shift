@@ -1,6 +1,7 @@
 #pragma once
 #include "abilities/Ability.h"
 #include "statuses/Status.h"
+#include "Inventory.h"
 #include <memory>
 #include <vector>
 
@@ -30,6 +31,9 @@ public:
 	void addStatus(std::unique_ptr<Status> status);
 	bool canMove() const;
 	bool prepareAbility();
+	const Inventory* inventory() const;
+	bool receiveItem(Inventory::Item item);
+	bool useItem(Inventory::Item item);
 	void damageFrom(Robot& actor, int amount);
 	int health() const;
 	int maxHealth() const;
@@ -49,10 +53,13 @@ public:
 	bool interact(Robot& target);
 	void takeDamage(int amount);
 	void repair(int amount);
+	void restoreEnergy(int amount);
 	void gainExperience(int amount);
 	void finishTurn();
 	void beginTurn();
 private:
+	friend class Field;
+	void setPlayer(bool player);
 	static constexpr int InitialRank = 1;
 	static constexpr int InitialEnergy = 10;
 	static constexpr int InitialExperienceToNextRank = 20;
@@ -73,5 +80,6 @@ private:
 	int speed_, vision_, remainingMovement_;
 	std::vector<std::unique_ptr<Ability>> abilities_;
 	std::vector<std::unique_ptr<Status>> statuses_;
+	std::unique_ptr<Inventory> inventory_;
 	void removeExpiredStatuses();
 };

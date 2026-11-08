@@ -23,6 +23,7 @@ public:
 	void upgradeAbility(int id, int index);
 	bool applyAbility(int id, int index, int row, int column);
 	bool prepareAbility(int id);
+	bool useItem(int id, Inventory::Item item);
 	void addStatus(int id, std::unique_ptr<Status> status);
 	void damageFrom(int actor, int target, int amount);
 	void addCellStatus(int row, int column, std::unique_ptr<Status> status);

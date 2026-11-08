@@ -72,6 +72,10 @@ void Robot::addStatus(std::unique_ptr<Status> value) {
 		return;
 	}
 	removeExpiredStatuses();
+	value->onApply(*this);
+	if (value->expired()) {
+		return;
+	}
 	for (auto& existing : statuses_) {
 		if (existing->merge(*value)) {
 			return;
@@ -115,7 +119,27 @@ int Robot::energy() const { return energy_; }
 
 int Robot::maxEnergy() const { return maxEnergy_; }
 
-int Robot::attack() const { return attack_; }
+int Robot::attack() const { return inventory_ ? cappedAdd(attack_, inventory_->attackBonus()) : attack_; }
+
+const Inventory* Robot::inventory() const { return inventory_.get(); }
+
+void Robot::setPlayer(bool player) {
+	if (player) {
+		if (!inventory_) {
+			inventory_ = std::make_unique<Inventory>();
+		}
+	} else {
+		inventory_.reset();
+	}
+}
+
+bool Robot::receiveItem(Inventory::Item item) {
+	return alive() && inventory_ && inventory_->add(item);
+}
+
+bool Robot::useItem(Inventory::Item item) {
+	return inventory_ && inventory_->use(item, *this);
+}
 
 int Robot::experience() const { return experience_; }
 
@@ -161,9 +185,9 @@ bool Robot::interact(Robot& target) {
 	}
 	energy_ -= InteractionEnergyCost;
 	if (side_ == target.side_) {
-		target.repair(attack_);
+		target.repair(attack());
 	} else {
-		target.damageFrom(*this, attack_);
+		target.damageFrom(*this, attack());
 	}
 	return true;
 }
@@ -202,6 +226,12 @@ void Robot::gainExperience(int amount) {
 	experience_ = static_cast<int>(total);
 }
 
+void Robot::restoreEnergy(int amount) {
+	if (alive()) {
+		energy_ += std::min(maxEnergy_ - energy_, std::max(0, amount));
+	}
+}
+
 int Robot::cappedAdd(int value, int amount) const {
 	const int limit = std::numeric_limits<int>::max();
 	return value + std::min(amount, limit - value);
@@ -214,6 +244,9 @@ void Robot::finishTurn() {
 		}
 	}
 	removeExpiredStatuses();
+	if (inventory_) {
+		inventory_->finishTurn();
+	}
 	if (alive()) {
 		energy_ += std::min(EnergyRestoredPerTurn, maxEnergy_ - energy_);
 	}
@@ -221,6 +254,9 @@ void Robot::finishTurn() {
 
 void Robot::beginTurn() {
 	remainingMovement_ = speed_;
+	if (inventory_) {
+		inventory_->beginTurn();
+	}
 	for (auto& value : statuses_) {
 		if (!value->expired()) {
 			value->beginTurn();

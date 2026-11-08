@@ -49,11 +49,13 @@ void ConsoleRenderer::draw(const Field& field, const RobotFactory& factory, int 
 		<< "  Энергия: " << player.energy() << '/' << player.maxEnergy()
 		<< "\nОпыт: " << player.experience() << '/' << player.experienceToNextRank()
 		<< "  Ранг: " << player.rank() << "  Атака: " << player.attack()
+		<< "  Бонус атаки: +" << (player.inventory() ? player.inventory()->attackBonus() : 0)
+		<< " (ходов: " << (player.inventory() ? player.inventory()->attackTurns() : 0) << ')'
 		<< "\nПередвижение: " << player.remainingMovement() << '/' << player.speed()
 		<< "  Обзор: " << player.vision()
 		<< "\n@ смотритель, E враг, + гид, # стена, . пол, ~ завалы, ? неизвестно, F станок"
 		<< "\n" << text
-		<< "\nW/A/S/D + Enter: шаг или взаимодействие; E: конец хода; F: отключить станок; R: способность; Q: выход\n";
+		<< "\nW/A/S/D + Enter: шаг или взаимодействие; E: конец хода; F: отключить станок; R: способность; I: инвентарь; Q: выход\n";
 	std::cout << "Способности:\n";
 	for (int index = 0; index < player.abilityCount(); ++index) {
 		const Ability& ability = player.ability(index);

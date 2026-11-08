@@ -11,6 +11,7 @@ public:
 	virtual std::unique_ptr<Status> clone() const = 0;
 	virtual bool merge(const Status& other) = 0;
 	virtual bool expired() const = 0;
+	virtual void onApply(Robot& robot);
 	virtual bool blocksMovement() const;
 	virtual bool cancelsAbility();
 	virtual int absorbDamage(int amount);

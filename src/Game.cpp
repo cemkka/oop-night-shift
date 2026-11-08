@@ -5,7 +5,8 @@
 #include <iterator>
 
 Game::Game(bool populateStatuses)
-	: field_(MapRows, MapColumns, populateStatuses), factory_(field_, 6, 6, FactoryPeriod), menu_(field_) {
+	: field_(MapRows, MapColumns, populateStatuses), factory_(field_, 6, 6, FactoryPeriod),
+	menu_(field_), inventoryMenu_(field_) {
 	field_.setTerrain(3, 4, false);
 	field_.setTerrain(3, 5, false);
 	field_.setTerrain(1, 3, true, Cell::SlowMovementCost);
@@ -144,11 +145,20 @@ bool Game::command(const std::string& input) {
 		}
 		return true;
 	}
+	if (inventoryMenu_.active()) {
+		inventoryMenu_.handle(input, message_);
+		return true;
+	}
 	if (input.size() != CommandLength) {
 		message_ = "Введите одну английскую букву команды.";
 		return true;
 	}
 	char key = static_cast<char>(std::tolower(static_cast<unsigned char>(input[0])));
+	if (key == 'i') {
+		inventoryMenu_.open();
+		message_ = "Выберите предмет.";
+		return true;
+	}
 	if (key == 'r') {
 		menu_.startUse();
 		message_ = "Выберите способность.";
@@ -209,6 +219,8 @@ void Game::run() {
 		std::string input;
 		if (menu_.active()) {
 			renderer_.message(menu_.prompt());
+		} else if (inventoryMenu_.active()) {
+			renderer_.message(inventoryMenu_.prompt());
 		}
 		if (!std::getline(std::cin, input) || !command(input)) {
 			renderer_.message("Смена завершена.");

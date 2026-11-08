@@ -14,5 +14,9 @@ private:
 	static void statuses();
 	static void cells();
 	static void endings();
+	static void inventoryOwnership();
+	static void inventoryResources();
+	static void inventoryBoost();
+	static void inventoryMenu();
 	static std::string runGame(Game& game, const std::string& input);
 };

@@ -4,6 +4,8 @@
 
 Status::~Status() = default;
 
+void Status::onApply(Robot&) {}
+
 bool Status::blocksMovement() const { return false; }
 
 bool Status::cancelsAbility() { return false; }

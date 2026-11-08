@@ -1,6 +1,7 @@
 #pragma once
 #include "ConsoleRenderer.h"
 #include "AbilityMenu.h"
+#include "InventoryMenu.h"
 #include <string>
 
 class Game {
@@ -34,6 +35,7 @@ private:
 	RobotFactory factory_;
 	ConsoleRenderer renderer_;
 	AbilityMenu menu_;
+	InventoryMenu inventoryMenu_;
 	int turn_ = FirstTurn;
 	bool endTurnPending_ = false;
 	std::string message_ = "Отключите станок и обезвредьте все взбунтовавшиеся экспонаты.";
