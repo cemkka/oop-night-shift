@@ -1,5 +1,6 @@
 #include "ConsoleRenderer.h"
 #include <iostream>
+#include <iomanip>
 
 char ConsoleRenderer::symbol(const Field& field, const RobotFactory& factory, int row, int column) const {
 	const Cell& cell = field.cell(row, column);
@@ -32,9 +33,15 @@ char ConsoleRenderer::symbol(const Field& field, const RobotFactory& factory, in
 void ConsoleRenderer::draw(const Field& field, const RobotFactory& factory, int turn, const std::string& text) const {
 	const Robot& player = field.robot(Robot::PlayerId);
 	std::cout << "\nНочная смена — ход " << turn << "\n";
+	std::cout << "Координаты: нумерация строк и столбцов с 0.\n    ";
+	for (int column = 0; column < field.columns(); ++column) {
+		std::cout << std::setw(3) << column;
+	}
+	std::cout << '\n';
 	for (int row = 0; row < field.rows(); ++row) {
+		std::cout << std::setw(3) << row << ' ';
 		for (int column = 0; column < field.columns(); ++column) {
-			std::cout << symbol(field, factory, row, column) << ' ';
+			std::cout << std::setw(3) << symbol(field, factory, row, column);
 		}
 		std::cout << '\n';
 	}
@@ -46,7 +53,12 @@ void ConsoleRenderer::draw(const Field& field, const RobotFactory& factory, int 
 		<< "  Обзор: " << player.vision()
 		<< "\n@ смотритель, E враг, + гид, # стена, . пол, ~ завалы, ? неизвестно, F станок"
 		<< "\n" << text
-		<< "\nW/A/S/D + Enter: шаг или взаимодействие; E: конец хода; F: отключить станок; Q: выход\n> ";
+		<< "\nW/A/S/D + Enter: шаг или взаимодействие; E: конец хода; F: отключить станок; R: способность; Q: выход\n";
+	std::cout << "Способности:\n";
+	for (int index = 0; index < player.abilityCount(); ++index) {
+		const Ability& ability = player.ability(index);
+		std::cout << index + 1 << ": " << ability.name() << " — " << ability.energyCost() << " энергии\n";
+	}
 }
 
 void ConsoleRenderer::message(const std::string& text) const { std::cout << text << '\n'; }

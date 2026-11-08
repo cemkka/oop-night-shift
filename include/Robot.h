@@ -1,4 +1,7 @@
 #pragma once
+#include "abilities/Ability.h"
+#include <memory>
+#include <vector>
 
 class Robot {
 public:
@@ -12,6 +15,15 @@ public:
 	enum class Side { Friendly, Enemy };
 	Robot(Side side, int health = DefaultHealth, int attack = DefaultAttack,
 		int speed = DefaultSpeed, int vision = DefaultVision);
+	Robot(const Robot&) = delete;
+	Robot& operator=(const Robot&) = delete;
+	Robot(Robot&&) noexcept = default;
+	Robot& operator=(Robot&&) noexcept = default;
+	int abilityCount() const;
+	const Ability& ability(int index) const;
+	void addAbility(std::unique_ptr<Ability> ability);
+	void upgradeAbility(int index);
+	bool applyAbility(int index, Field& field, int id, int row, int column);
 	int health() const;
 	int maxHealth() const;
 	int energy() const;
@@ -52,4 +64,5 @@ private:
 	int energy_ = InitialEnergy, maxEnergy_ = InitialEnergy;
 	int experience_ = 0, experienceToNextRank_ = InitialExperienceToNextRank, rank_ = InitialRank;
 	int speed_, vision_, remainingMovement_;
+	std::vector<std::unique_ptr<Ability>> abilities_;
 };

@@ -17,7 +17,10 @@ public:
 	bool contains(int row, int column) const;
 	const Cell& cell(int row, int column) const;
 	void setTerrain(int row, int column, bool passable, int cost = Cell::NormalMovementCost);
-	int addRobot(const Robot& robot, int row, int column);
+	int addRobot(Robot robot, int row, int column);
+	void addAbility(int id, std::unique_ptr<Ability> ability);
+	void upgradeAbility(int id, int index);
+	bool applyAbility(int id, int index, int row, int column);
 	int robotCount() const;
 	const Robot& robot(int id) const;
 	bool interact(int actor, int target);

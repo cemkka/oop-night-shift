@@ -1,7 +1,11 @@
 #include "Robot.h"
+#include "abilities/Healing.h"
+#include "abilities/Teleportation.h"
 #include <algorithm>
 #include <stdexcept>
 #include <limits>
+#include <random>
+#include <utility>
 
 Robot::Robot(Side side, int health, int attack, int speed, int vision)
 	: side_(side), health_(health), maxHealth_(health), attack_(attack),
@@ -10,6 +14,32 @@ Robot::Robot(Side side, int health, int attack, int speed, int vision)
 		|| (side != Side::Friendly && side != Side::Enemy)) {
 		throw std::invalid_argument("Invalid robot characteristics");
 	}
+	if (side_ == Side::Enemy) {
+		static std::mt19937 generator(std::random_device{}());
+		if (std::uniform_int_distribution<int>(0, 1)(generator) == 0) {
+			addAbility(std::make_unique<Healing>());
+		} else {
+			addAbility(std::make_unique<Teleportation>());
+		}
+	}
+}
+
+int Robot::abilityCount() const { return static_cast<int>(abilities_.size()); }
+
+const Ability& Robot::ability(int index) const { return *abilities_.at(index); }
+
+void Robot::addAbility(std::unique_ptr<Ability> value) {
+	if (!value) {
+		throw std::invalid_argument("Null ability");
+	}
+	abilities_.push_back(std::move(value));
+}
+
+void Robot::upgradeAbility(int index) { abilities_.at(index)->upgrade(); }
+
+bool Robot::applyAbility(int index, Field& field, int id, int row, int column) {
+	return alive() && index >= 0 && index < abilityCount()
+		&& abilities_[index]->apply(field, id, row, column);
 }
 
 int Robot::health() const { return health_; }

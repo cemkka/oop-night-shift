@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
+#include <utility>
 Field::Field(int rows, int columns) : rows_(rows), columns_(columns) {
 	if (rows < MinSize || rows > MaxSize || columns < MinSize || columns > MaxSize) {
 		throw std::invalid_argument("Field dimensions must be "
@@ -37,13 +38,12 @@ bool Field::free(int row, int column) const {
 		&& cell(row, column).robotId() == Robot::NoRobotId;
 }
 
-int Field::addRobot(const Robot& value, int row, int column) {
+int Field::addRobot(Robot value, int row, int column) {
 	constexpr std::size_t CapacityGrowth = 2;
 	if (!value.alive() || !free(row, column)) {
 		throw std::invalid_argument("Invalid placement");
 	}
 	int id = robotCount();
-	Robot copy = value;
 	std::size_t requiredCapacity = robots_.size() + 1;
 	if (robots_.capacity() < requiredCapacity || robotRows_.capacity() < requiredCapacity
 		|| robotColumns_.capacity() < requiredCapacity) {
@@ -52,7 +52,7 @@ int Field::addRobot(const Robot& value, int row, int column) {
 		robotRows_.reserve(newCapacity);
 		robotColumns_.reserve(newCapacity);
 	}
-	robots_.push_back(copy);
+	robots_.push_back(std::move(value));
 	robotRows_.push_back(row);
 	robotColumns_.push_back(column);
 	cells_[row][column].setRobotId(id);
@@ -60,6 +60,17 @@ int Field::addRobot(const Robot& value, int row, int column) {
 }
 
 int Field::robotCount() const { return static_cast<int>(robots_.size()); }
+
+void Field::addAbility(int id, std::unique_ptr<Ability> value) {
+	robots_.at(id).addAbility(std::move(value));
+}
+
+void Field::upgradeAbility(int id, int index) { robots_.at(id).upgradeAbility(index); }
+
+bool Field::applyAbility(int id, int index, int targetRow, int targetColumn) {
+	return id >= 0 && id < robotCount()
+		&& robots_[id].applyAbility(index, *this, id, targetRow, targetColumn);
+}
 
 const Robot& Field::robot(int id) const { return robots_.at(id); }
 
