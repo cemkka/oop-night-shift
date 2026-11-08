@@ -274,8 +274,10 @@ void TestSuite::statuses() {
 	assert(!saturated.canMove());
 	saturated.addStatus(std::make_unique<Burning>(std::numeric_limits<int>::max()));
 	saturated.addStatus(std::make_unique<Burning>(1));
-	saturated.finishTurn();
-	assert(saturated.health() == 100);
+	Field saturatedField(8, 8, false);
+	int saturatedId = saturatedField.addRobot(std::move(saturated), 1, 1);
+	saturatedField.finishTurn(saturatedId);
+	assert(saturatedField.robot(saturatedId).health() == 100);
 	for (int invalid = 0; invalid < 3; ++invalid) {
 		bool rejected = false;
 		try {
@@ -496,28 +498,35 @@ void TestSuite::inventoryOwnership() {
 	int player = field.addRobot(Robot(Robot::Side::Friendly), 1, 1);
 	int guide = field.addRobot(Robot(Robot::Side::Friendly), 2, 1);
 	int enemy = field.addRobot(Robot(Robot::Side::Enemy), 3, 1);
-	assert(field.robot(player).inventory());
-	assert(!field.robot(guide).inventory());
-	assert(!field.robot(enemy).inventory());
+	assert(field.robot(player).hasInventory());
+	assert(!field.robot(guide).hasInventory());
+	assert(!field.robot(enemy).hasInventory());
+	bool missingInventoryRejected = false;
+	try {
+		field.robot(guide).inventory();
+	} catch (const std::logic_error&) {
+		missingInventoryRejected = true;
+	}
+	assert(missingInventoryRejected);
 	field.addCellStatus(2, 2, std::make_unique<ItemGrant>(Item::Health));
 	field.addCellStatus(3, 2, std::make_unique<ItemGrant>(Item::Energy));
 	assert(field.move(guide, 2, 2));
 	assert(field.move(enemy, 3, 2));
 	assert(field.cell(2, 2).statusCount() == 0);
 	assert(field.cell(3, 2).statusCount() == 0);
-	assert(!field.robot(guide).inventory() && !field.robot(enemy).inventory());
+	assert(!field.robot(guide).hasInventory() && !field.robot(enemy).hasInventory());
 	assert(!field.useItem(guide, Item::Health));
 	assert(!field.useItem(enemy, Item::Energy));
-	assert(field.robot(player).inventory()->count(Item::Health) == 0);
+	assert(field.robot(player).inventory().count(Item::Health) == 0);
 	field.addCellStatus(1, 2, std::make_unique<ItemGrant>(Item::Health));
 	assert(field.move(player, 1, 2));
-	assert(field.robot(player).inventory()->count(Item::Health) == 1);
+	assert(field.robot(player).inventory().count(Item::Health) == 1);
 	assert(field.robot(player).statusCount() == 0);
 	assert(field.cell(1, 2).statusCount() == 0);
 	field.addCellStatus(1, 6, std::make_unique<ItemGrant>(Item::Energy));
 	Teleportation teleportation;
 	assert(teleportation.apply(field, player, 1, 6));
-	assert(field.robot(player).inventory()->count(Item::Energy) == 1);
+	assert(field.robot(player).inventory().count(Item::Energy) == 1);
 	assert(field.cell(1, 6).statusCount() == 0);
 	ItemGrant source(Item::Attack);
 	auto first = source.clone();
@@ -526,30 +535,30 @@ void TestSuite::inventoryOwnership() {
 	assert(!source.merge(*first));
 	field.addStatus(player, std::move(first));
 	field.addStatus(player, std::move(second));
-	assert(field.robot(player).inventory()->count(Item::Attack) == 2);
+	assert(field.robot(player).inventory().count(Item::Attack) == 2);
 	assert(!source.expired());
 	Robot nobody(Robot::Side::Friendly);
 	source.onApply(nobody);
 	source.onApply(nobody);
 	assert(source.expired());
-	assert(!nobody.inventory());
+	assert(!nobody.hasInventory());
 	auto exhausted = source.clone();
 	assert(exhausted->expired());
 	field.addStatus(player, std::move(exhausted));
-	assert(field.robot(player).inventory()->count(Item::Attack) == 2);
+	assert(field.robot(player).inventory().count(Item::Attack) == 2);
 	for (int turn = 0; turn < 4; ++turn) {
 		field.beginTurn(player);
 		field.finishTurn(player);
 	}
-	assert(field.robot(player).inventory()->count(Item::Attack) == 2);
+	assert(field.robot(player).inventory().count(Item::Attack) == 2);
 	field.addCellStatus(1, 7, std::make_unique<ItemGrant>(Item::Attack));
 	field.addCellStatus(1, 7, std::make_unique<ItemGrant>(Item::Attack));
 	assert(field.move(player, 1, 7));
-	assert(field.robot(player).inventory()->count(Item::Attack) == 4);
+	assert(field.robot(player).inventory().count(Item::Attack) == 4);
 	assert(field.cell(1, 7).statusCount() == 1);
 	assert(field.teleport(player, 1, 8));
 	assert(field.move(player, 1, 7));
-	assert(field.robot(player).inventory()->count(Item::Attack) == 5);
+	assert(field.robot(player).inventory().count(Item::Attack) == 5);
 	assert(field.cell(1, 7).statusCount() == 0);
 	int observed = 0;
 	for (int sample = 0; sample < 4; ++sample) {
@@ -576,7 +585,7 @@ void TestSuite::inventoryOwnership() {
 		game.factory_.advance();
 	}
 	for (int id = 1; id < game.field().robotCount(); ++id) {
-		assert(!game.field().robot(id).inventory());
+		assert(!game.field().robot(id).hasInventory());
 	}
 }
 
@@ -588,7 +597,8 @@ void TestSuite::inventoryResources() {
 	field.addStatus(0, std::make_unique<ItemGrant>(Item::Health));
 	field.addStatus(0, std::make_unique<ItemGrant>(Item::Energy));
 	field.addStatus(0, std::make_unique<ItemGrant>(Item::Energy));
-	const Inventory& inventory = *field.robot(0).inventory();
+	assert(field.robot(0).hasInventory());
+	const Inventory& inventory = field.robot(0).inventory();
 	assert(!field.useItem(0, Item::Health));
 	assert(!field.useItem(0, Item::Energy));
 	assert(inventory.count(Item::Health) == 2 && inventory.count(Item::Energy) == 2);
@@ -649,7 +659,8 @@ void TestSuite::inventoryBoost() {
 	field.addStatus(0, std::make_unique<ItemGrant>(Item::Attack));
 	field.takeDamage(guide, 60);
 	assert(field.useItem(0, Item::Attack));
-	const Inventory& inventory = *field.robot(0).inventory();
+	assert(field.robot(0).hasInventory());
+	const Inventory& inventory = field.robot(0).inventory();
 	assert(inventory.attackTurns() == Inventory::AttackDuration);
 	assert(inventory.attackBonus() == Inventory::AttackIncrease);
 	assert(field.robot(0).attack() == 35);
@@ -700,7 +711,7 @@ void TestSuite::inventoryBoost() {
 	assert(capped.robot(0).attack() == std::numeric_limits<int>::max());
 	capped.addStatus(0, std::make_unique<ItemGrant>(Item::Attack));
 	assert(!capped.useItem(0, Item::Attack));
-	assert(capped.robot(0).inventory()->count(Item::Attack) == 1);
+	assert(capped.robot(0).inventory().count(Item::Attack) == 1);
 }
 
 void TestSuite::inventoryMenu() {
@@ -735,14 +746,14 @@ void TestSuite::inventoryMenu() {
 	assert(game.field().robot(0).health() == 90);
 	assert(game.field().robot(0).energy() == 10);
 	assert(game.field().robot(0).attack() == 35);
-	assert(game.field().robot(0).inventory()->attackTurns() == 3);
+	assert(game.field().robot(0).inventory().attackTurns() == 3);
 	std::string output = runGame(game, "i\n0\nQ\n");
 	assert(output.find("Инвентарь:") != std::string::npos);
 	assert(output.find("Ремкомплект") != std::string::npos);
 	assert(output.find("Бонус атаки: +10 (ходов: 3)") != std::string::npos);
 	assert(game.command("e"));
 	assert(game.turn() == 2);
-	assert(game.field().robot(0).inventory()->attackTurns() == 2);
+	assert(game.field().robot(0).inventory().attackTurns() == 2);
 	assert(game.command("d"));
 	assert(game.field().column(0) == 2);
 	for (const auto& input : {"", "1\ni\n", "1\ni\ninvalid\n", "1\ni\nQ\n", "1\ni\n0\nq\n"}) {
@@ -868,10 +879,10 @@ void TestSuite::displayCommand() {
 			for (int index = 0; index < robot.statusCount(); ++index) {
 				result << ' ' << robot.status(index).name();
 			}
-			if (robot.inventory()) {
-				result << ' ' << robot.inventory()->attackTurns();
+			if (robot.hasInventory()) {
+				result << ' ' << robot.inventory().attackTurns();
 				for (int type = 0; type < Inventory::ItemCount; ++type) {
-					result << ' ' << robot.inventory()->count(static_cast<Inventory::Item>(type));
+					result << ' ' << robot.inventory().count(static_cast<Inventory::Item>(type));
 				}
 			}
 		}

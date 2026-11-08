@@ -35,7 +35,7 @@ void AbilityMenu::handle(const std::string& input, std::string& message) {
 void AbilityMenu::choose(const std::string& input, std::string& message) {
 	int choice = 0;
 	if (!parseNumber(input, choice) || choice < 1 || choice > AbilityCatalog::Count) {
-		message = "Введите номер от 1 до 4; Q — выход.";
+		message = "Введите номер от 1 до " + std::to_string(AbilityCatalog::Count) + "; Q — выход.";
 		return;
 	}
 	auto ability = AbilityCatalog::create(choice);

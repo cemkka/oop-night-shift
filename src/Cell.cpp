@@ -14,7 +14,7 @@ int Cell::statusCount() const { return static_cast<int>(statuses_.size()); }
 const Status& Cell::status(int index) const { return *statuses_.at(index); }
 
 void Cell::addStatus(std::unique_ptr<Status> value) {
-	if (!value || !passable_ || statuses_.size() >= 2) {
+	if (!value || !passable_ || statusCount() >= MaxStatuses) {
 		throw std::invalid_argument("Invalid cell status");
 	}
 	statuses_.push_back(std::move(value));

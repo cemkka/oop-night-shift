@@ -10,7 +10,7 @@ public:
 	std::unique_ptr<Status> clone() const override;
 	bool merge(const Status& other) override;
 	bool expired() const override;
-	void finishTurn(Robot& robot, Field* field = nullptr, int id = -1) override;
+	void finishTurn(Robot& robot, Field& field, int id) override;
 private:
 	int turns_;
 	int sourceId_;

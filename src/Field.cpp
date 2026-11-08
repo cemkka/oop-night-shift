@@ -24,15 +24,18 @@ Field::Field(int rows, int columns, bool populateStatuses)
 			cells_[row].emplace_back(passable);
 			int count = populateStatuses && passable ? countDistribution(generator_) : 0;
 			for (int index = 0; index < count; ++index) {
-				switch (std::uniform_int_distribution<int>(0, 4)(generator_)) {
-				case 0: cells_[row][column].addStatus(std::make_unique<Slowing>()); break;
-				case 1: cells_[row][column].addStatus(std::make_unique<Overload>()); break;
-				case 2: cells_[row][column].addStatus(std::make_unique<Burning>(CellBurningDuration)); break;
-				case 3: cells_[row][column].addStatus(std::make_unique<Shield>(CellShieldProtection)); break;
-				case 4:
+				auto kind = static_cast<CellStatusKind>(std::uniform_int_distribution<int>(
+					0, static_cast<int>(CellStatusKind::Count) - 1)(generator_));
+				switch (kind) {
+				case CellStatusKind::Slowing: cells_[row][column].addStatus(std::make_unique<Slowing>()); break;
+				case CellStatusKind::Overload: cells_[row][column].addStatus(std::make_unique<Overload>()); break;
+				case CellStatusKind::Burning: cells_[row][column].addStatus(std::make_unique<Burning>(CellBurningDuration)); break;
+				case CellStatusKind::Shield: cells_[row][column].addStatus(std::make_unique<Shield>(CellShieldProtection)); break;
+				case CellStatusKind::ItemGrant:
 					cells_[row][column].addStatus(std::make_unique<ItemGrant>(static_cast<Inventory::Item>(
 						std::uniform_int_distribution<int>(0, Inventory::ItemCount - 1)(generator_))));
 					break;
+				case CellStatusKind::Count: break;
 				}
 			}
 		}
@@ -167,7 +170,7 @@ void Field::beginTurn(int id) { robots_.at(id).beginTurn(); }
 void Field::endTurn(int id) { robots_.at(id).endTurn(); }
 
 void Field::finishTurn(int id) {
-	robots_.at(id).finishTurn(this, id);
+	robots_.at(id).finishTurn(*this, id);
 	removeDead();
 }
 

@@ -17,7 +17,7 @@ public:
 	virtual bool cancelsAbility();
 	virtual int absorbDamage(int amount);
 	virtual void beginTurn();
-	virtual void finishTurn(Robot& robot, Field* field = nullptr, int id = -1);
+	virtual void finishTurn(Robot& robot, Field& field, int id);
 protected:
 	static int saturatedAdd(int value, int amount);
 };

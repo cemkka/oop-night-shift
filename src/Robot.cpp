@@ -52,8 +52,11 @@ const Status& Robot::status(int index) const {
 		throw std::out_of_range("Invalid status index");
 	}
 	for (const auto& value : statuses_) {
-		if (!value->expired() && index-- == 0) {
-			return *value;
+		if (!value->expired()) {
+			if (index == 0) {
+				return *value;
+			}
+			--index;
 		}
 	}
 	throw std::out_of_range("Invalid status index");
@@ -121,7 +124,14 @@ int Robot::maxEnergy() const { return maxEnergy_; }
 
 int Robot::attack() const { return inventory_ ? cappedAdd(attack_, inventory_->attackBonus()) : attack_; }
 
-const Inventory* Robot::inventory() const { return inventory_.get(); }
+bool Robot::hasInventory() const { return static_cast<bool>(inventory_); }
+
+const Inventory& Robot::inventory() const {
+	if (!hasInventory()) {
+		throw std::logic_error("Robot has no inventory");
+	}
+	return *inventory_;
+}
 
 void Robot::setPlayer(bool player) {
 	if (player) {
@@ -237,11 +247,7 @@ int Robot::cappedAdd(int value, int amount) const {
 	return value + std::min(amount, limit - value);
 }
 
-void Robot::finishTurn() {
-	finishTurn(nullptr, NoRobotId);
-}
-
-void Robot::finishTurn(Field* field, int id) {
+void Robot::finishTurn(Field& field, int id) {
 	endTurn();
 	for (auto& value : statuses_) {
 		if (!value->expired()) {

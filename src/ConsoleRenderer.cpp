@@ -72,13 +72,13 @@ void ConsoleRenderer::draw(const Field& field, const RobotFactory& factory, int 
 	std::cout << "Режим карты: " << modeName(mode) << '\n';
 	std::cout << "Координаты: нумерация строк и столбцов с 0.\n    ";
 	for (int column = 0; column < field.columns(); ++column) {
-		std::cout << std::setw(3) << column;
+		std::cout << std::setw(ColumnWidth) << column;
 	}
 	std::cout << '\n';
 	for (int row = 0; row < field.rows(); ++row) {
-		std::cout << std::setw(3) << row << ' ';
+		std::cout << std::setw(ColumnWidth) << row << ' ';
 		for (int column = 0; column < field.columns(); ++column) {
-			std::cout << "  " << styledSymbol(field, factory, row, column, mode);
+			std::cout << std::string(ColumnWidth - 1, ' ') << styledSymbol(field, factory, row, column, mode);
 		}
 		std::cout << '\n';
 	}
@@ -86,8 +86,8 @@ void ConsoleRenderer::draw(const Field& field, const RobotFactory& factory, int 
 		<< "  Энергия: " << player.energy() << '/' << player.maxEnergy()
 		<< "\nОпыт: " << player.experience() << '/' << player.experienceToNextRank()
 		<< "  Ранг: " << player.rank() << "  Атака: " << player.attack()
-		<< "  Бонус атаки: +" << (player.inventory() ? player.inventory()->attackBonus() : 0)
-		<< " (ходов: " << (player.inventory() ? player.inventory()->attackTurns() : 0) << ')'
+		<< "  Бонус атаки: +" << (player.hasInventory() ? player.inventory().attackBonus() : 0)
+		<< " (ходов: " << (player.hasInventory() ? player.inventory().attackTurns() : 0) << ')'
 		<< "\nПередвижение: " << player.remainingMovement() << '/' << player.speed()
 		<< "  Обзор: " << player.vision()
 		<< "\n@ смотритель, E враг, + гид, # стена, . пол, ~ завалы, ? неизвестно, F станок"

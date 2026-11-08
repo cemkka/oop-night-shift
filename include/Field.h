@@ -48,6 +48,7 @@ public:
 	void remember(int observer);
 	bool hasEnemies() const;
 private:
+	enum class CellStatusKind { Slowing, Overload, Burning, Shield, ItemGrant, Count };
 	static constexpr int MinSize = 8;
 	static constexpr int MaxSize = 30;
 	static constexpr int EmptyStatusWeight = 70;

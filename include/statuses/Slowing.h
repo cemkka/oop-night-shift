@@ -11,7 +11,7 @@ public:
 	bool blocksMovement() const override;
 	void onApply(Robot& robot) override;
 	void beginTurn() override;
-	void finishTurn(Robot& robot, Field* field = nullptr, int id = -1) override;
+	void finishTurn(Robot& robot, Field& field, int id) override;
 private:
 	int turns_;
 	bool affectedTurn_ = false;

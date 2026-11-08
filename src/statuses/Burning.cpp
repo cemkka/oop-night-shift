@@ -25,11 +25,11 @@ bool Burning::merge(const Status& other) {
 
 bool Burning::expired() const { return turns_ == 0; }
 
-void Burning::finishTurn(Robot& robot, Field* field, int id) {
+void Burning::finishTurn(Robot& robot, Field& field, int id) {
 	if (turns_ > 0 && robot.alive()) {
-		if (field && id >= 0 && id < field->robotCount()
-			&& sourceId_ >= 0 && sourceId_ < field->robotCount() && field->robot(sourceId_).alive()) {
-			field->damageFrom(sourceId_, id, Damage);
+		if (id >= 0 && id < field.robotCount()
+			&& sourceId_ >= 0 && sourceId_ < field.robotCount() && field.robot(sourceId_).alive()) {
+			field.damageFrom(sourceId_, id, Damage);
 		} else {
 			robot.takeDamage(Damage);
 		}

@@ -13,6 +13,7 @@ public:
 		Mode mode = Mode::Standard) const;
 	void message(const std::string& text) const;
 private:
+	static constexpr int ColumnWidth = 3;
 	static constexpr const char* EnemyColor = "\x1b[31m";
 	static constexpr const char* ImpassableColor = "\x1b[33m";
 	static constexpr const char* StatusColor = "\x1b[36m";

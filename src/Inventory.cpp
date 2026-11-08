@@ -44,7 +44,7 @@ bool Inventory::add(Item item, int amount) {
 }
 
 bool Inventory::use(Item item, Robot& robot) {
-	if (!valid(item) || robot.inventory() != this || !robot.alive() || count(item) == 0) {
+	if (!valid(item) || !robot.hasInventory() || &robot.inventory() != this || !robot.alive() || count(item) == 0) {
 		return false;
 	}
 	switch (item) {

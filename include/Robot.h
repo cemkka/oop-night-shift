@@ -31,7 +31,8 @@ public:
 	void addStatus(std::unique_ptr<Status> status);
 	bool canMove() const;
 	bool prepareAbility();
-	const Inventory* inventory() const;
+	bool hasInventory() const;
+	const Inventory& inventory() const;
 	bool receiveItem(Inventory::Item item);
 	bool useItem(Inventory::Item item);
 	void damageFrom(Robot& actor, int amount);
@@ -55,8 +56,7 @@ public:
 	void repair(int amount);
 	void restoreEnergy(int amount);
 	void gainExperience(int amount);
-	void finishTurn();
-	void finishTurn(Field* field, int id);
+	void finishTurn(Field& field, int id);
 	void beginTurn();
 	void endTurn();
 	bool turnActive() const;

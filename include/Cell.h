@@ -5,6 +5,7 @@ class Cell {
 public:
 	static constexpr int NormalMovementCost = 1;
 	static constexpr int SlowMovementCost = 2;
+	static constexpr int MaxStatuses = 2;
 
 	Cell(bool passable = true, int cost = NormalMovementCost);
 	Cell(const Cell&) = delete;

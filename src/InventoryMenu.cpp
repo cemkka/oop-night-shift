@@ -20,8 +20,8 @@ void InventoryMenu::handle(const std::string& input, std::string& message) {
 		return;
 	}
 	auto item = static_cast<Inventory::Item>(choice - 1);
-	const Inventory* inventory = field_.robot(Robot::PlayerId).inventory();
-	if (!inventory || inventory->count(item) == 0) {
+	const Robot& player = field_.robot(Robot::PlayerId);
+	if (!player.hasInventory() || player.inventory().count(item) == 0) {
 		message = "Такого предмета нет в инвентаре.";
 	} else if (field_.useItem(Robot::PlayerId, item)) {
 		message = "Предмет использован: " + Inventory::name(item) + ".";
@@ -33,15 +33,16 @@ void InventoryMenu::handle(const std::string& input, std::string& message) {
 }
 
 std::string InventoryMenu::prompt() const {
-	const Inventory* inventory = field_.robot(Robot::PlayerId).inventory();
-	if (!inventory) {
+	const Robot& player = field_.robot(Robot::PlayerId);
+	if (!player.hasInventory()) {
 		return "Инвентарь недоступен. 0 — вернуться; Q — выход.";
 	}
+	const Inventory& inventory = player.inventory();
 	std::string text = "Инвентарь:\n";
 	for (int index = 0; index < Inventory::ItemCount; ++index) {
 		auto item = static_cast<Inventory::Item>(index);
 		text += std::to_string(index + 1) + " — " + Inventory::name(item) + " × "
-			+ std::to_string(inventory->count(item)) + ": " + Inventory::description(item) + "\n";
+			+ std::to_string(inventory.count(item)) + ": " + Inventory::description(item) + "\n";
 	}
 	return text + "Введите номер предмета. 0 — вернуться; Q — выход.";
 }

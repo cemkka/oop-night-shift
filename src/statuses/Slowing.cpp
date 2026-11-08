@@ -29,7 +29,7 @@ void Slowing::beginTurn() { affectedTurn_ = true; }
 
 void Slowing::onApply(Robot& robot) { affectedTurn_ = robot.turnActive(); }
 
-void Slowing::finishTurn(Robot&, Field*, int) {
+void Slowing::finishTurn(Robot&, Field&, int) {
 	if (affectedTurn_ && turns_ > 0) {
 		--turns_;
 	}
