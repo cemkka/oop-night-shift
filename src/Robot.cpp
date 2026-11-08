@@ -38,6 +38,14 @@ Robot::Side Robot::side() const { return side_; }
 
 bool Robot::alive() const { return health_ > 0; }
 
+bool Robot::spendEnergy(int amount) {
+	if (!alive() || amount <= 0 || energy_ < amount) {
+		return false;
+	}
+	energy_ -= amount;
+	return true;
+}
+
 bool Robot::spendMovement(int amount) {
 	if (!alive() || amount <= 0 || remainingMovement_ < amount) {
 		return false;

@@ -22,6 +22,8 @@ public:
 	const Robot& robot(int id) const;
 	bool interact(int actor, int target);
 	void takeDamage(int id, int amount);
+	void repair(int id, int amount);
+	bool spendEnergy(int id, int amount);
 	bool spendMovement(int id, int amount);
 	void beginTurn(int id);
 	void finishTurn(int id);
@@ -29,6 +31,7 @@ public:
 	int column(int id) const;
 	bool free(int row, int column) const;
 	bool move(int id, int row, int column);
+	bool teleport(int id, int row, int column);
 	void removeDead();
 	bool visible(int observer, int row, int column) const;
 	int distanceTo(int observer, int targetRow, int targetColumn) const;

@@ -25,6 +25,7 @@ public:
 	int remainingMovement() const;
 	Side side() const;
 	bool alive() const;
+	bool spendEnergy(int amount);
 	bool spendMovement(int amount);
 	bool interact(Robot& target);
 	void takeDamage(int amount);

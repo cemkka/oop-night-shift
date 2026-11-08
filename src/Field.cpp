@@ -79,6 +79,10 @@ void Field::takeDamage(int id, int amount) {
 
 bool Field::spendMovement(int id, int amount) { return robots_.at(id).spendMovement(amount); }
 
+void Field::repair(int id, int amount) { robots_.at(id).repair(amount); }
+
+bool Field::spendEnergy(int id, int amount) { return robots_.at(id).spendEnergy(amount); }
+
 void Field::beginTurn(int id) { robots_.at(id).beginTurn(); }
 
 void Field::finishTurn(int id) { robots_.at(id).finishTurn(); }
@@ -118,6 +122,20 @@ bool Field::move(int id, int targetRow, int targetColumn) {
 	robotRows_[id] = targetRow;
 	robotColumns_[id] = targetColumn;
 	cells_[targetRow][targetColumn].setRobotId(id);
+	return true;
+}
+
+bool Field::teleport(int id, int targetRow, int targetColumn) {
+	if (id < 0 || id >= robotCount() || !robot(id).alive() || !free(targetRow, targetColumn)) {
+		return false;
+	}
+	cells_[row(id)][column(id)].setRobotId(Robot::NoRobotId);
+	robotRows_[id] = targetRow;
+	robotColumns_[id] = targetColumn;
+	cells_[targetRow][targetColumn].setRobotId(id);
+	if (id == Robot::PlayerId) {
+		remember(id);
+	}
 	return true;
 }
 
