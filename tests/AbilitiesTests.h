@@ -14,4 +14,8 @@ private:
 	static void testTeleportation();
 	static void testDeadRobotsAndEnergy();
 	static void testMovementPreserved();
+	static void testAreaStatuses();
+	static void testRangedStatuses();
+	static void testHealingShield();
+	static void testRepairWithoutShield();
 };

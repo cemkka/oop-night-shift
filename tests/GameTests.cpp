@@ -166,7 +166,8 @@ void TestSuite::attacks() {
 	area.upgrade();
 	assert(area.apply(field, actor, 0, 0));
 	assert(field.robot(diagonal).health() == 85);
-	assert(field.robot(ally).statusCount() == 0);
+	assert(field.robot(ally).statusCount() == 1);
+	assert(dynamic_cast<const Overload*>(&field.robot(ally).status(0)));
 	assert(!area.apply(field, actor, 0, 0));
 	Field rangedField(12, 12, false);
 	int caster = rangedField.addRobot(Robot(Robot::Side::Friendly), 1, 1);
@@ -184,7 +185,8 @@ void TestSuite::attacks() {
 	ranged.upgrade();
 	assert(ranged.apply(rangedField, caster, 1, 4));
 	assert(rangedField.robot(target).health() == 50);
-	assert(rangedField.robot(target).statusCount() == 0);
+	assert(rangedField.robot(target).statusCount() == 1);
+	assert(dynamic_cast<const Burning*>(&rangedField.robot(target).status(0)));
 	assert(rangedField.robot(caster).remainingMovement() == 3);
 	Field empty(8, 8, false);
 	empty.addRobot(Robot(Robot::Side::Friendly), 1, 1);
@@ -751,6 +753,163 @@ void TestSuite::inventoryMenu() {
 	}
 }
 
+void TestSuite::displayModes() {
+	using Mode = ConsoleRenderer::Mode;
+	Field field(12, 12, false);
+	RobotFactory factory(field, 8, 8, 5);
+	field.addRobot(Robot(Robot::Side::Friendly), 4, 4);
+	field.addRobot(Robot(Robot::Side::Enemy), 4, 5);
+	field.addRobot(Robot(Robot::Side::Friendly), 4, 3);
+	field.addRobot(Robot(Robot::Side::Enemy), 9, 5);
+	field.setTerrain(4, 6, false);
+	field.setTerrain(1, 7, false);
+	field.setTerrain(10, 1, false);
+	field.setTerrain(1, 6, true, Cell::SlowMovementCost);
+	ConsoleRenderer renderer;
+	assert(renderer.styledSymbol(field, factory, 8, 8, Mode::Impassable) == "?");
+	assert(field.teleport(0, 1, 5));
+	assert(field.teleport(0, 8, 7));
+	assert(field.teleport(0, 4, 4));
+	field.addCellStatus(4, 4, std::make_unique<Overload>());
+	field.addCellStatus(4, 5, std::make_unique<Overload>());
+	field.addCellStatus(4, 3, std::make_unique<Overload>());
+	field.addCellStatus(4, 7, std::make_unique<Overload>());
+	field.addCellStatus(1, 6, std::make_unique<Overload>());
+	field.addCellStatus(1, 10, std::make_unique<Overload>());
+	assert(renderer.styledSymbol(field, factory, 4, 5, Mode::Enemies) == "\x1b[31mE\x1b[0m");
+	assert(renderer.styledSymbol(field, factory, 4, 4, Mode::Enemies) == "@");
+	assert(renderer.styledSymbol(field, factory, 4, 3, Mode::Enemies) == "+");
+	assert(renderer.styledSymbol(field, factory, 4, 6, Mode::Impassable) == "\x1b[33m#\x1b[0m");
+	assert(!field.visible(0, 1, 7) && field.cell(1, 7).known());
+	assert(renderer.styledSymbol(field, factory, 1, 7, Mode::Impassable) == "\x1b[33m#\x1b[0m");
+	assert(!field.visible(0, 8, 8) && field.cell(8, 8).known());
+	assert(renderer.styledSymbol(field, factory, 8, 8, Mode::Impassable) == "\x1b[33mF\x1b[0m");
+	assert(factory.disable(8, 7));
+	assert(renderer.styledSymbol(field, factory, 8, 8, Mode::Impassable) == "\x1b[33mF\x1b[0m");
+	assert(renderer.styledSymbol(field, factory, 4, 4, Mode::Statuses) == "\x1b[36m@\x1b[0m");
+	assert(renderer.styledSymbol(field, factory, 4, 5, Mode::Statuses) == "\x1b[36mE\x1b[0m");
+	assert(renderer.styledSymbol(field, factory, 4, 3, Mode::Statuses) == "\x1b[36m+\x1b[0m");
+	assert(renderer.styledSymbol(field, factory, 4, 7, Mode::Statuses) == "\x1b[36m.\x1b[0m");
+	assert(!field.visible(0, 1, 6) && field.cell(1, 6).known());
+	assert(renderer.styledSymbol(field, factory, 1, 6, Mode::Statuses) == "~");
+	for (Mode mode : {Mode::Standard, Mode::Enemies, Mode::Impassable, Mode::Statuses}) {
+		assert(!renderer.modeName(mode).empty());
+		assert(renderer.styledSymbol(field, factory, 9, 5, mode) == "?");
+		assert(renderer.styledSymbol(field, factory, 1, 10, mode) == "?");
+		assert(renderer.styledSymbol(field, factory, 10, 1, mode) == "?");
+	}
+	auto draw = [&](Mode mode) {
+		std::ostringstream output;
+		auto* previous = std::cout.rdbuf(output.rdbuf());
+		renderer.draw(field, factory, 1, "", mode);
+		std::cout.rdbuf(previous);
+		return output.str();
+	};
+	auto map = [](const std::string& text) {
+		auto start = text.find("Координаты:");
+		auto end = text.find("Здоровье:", start);
+		assert(start != std::string::npos && end != std::string::npos);
+		std::string result;
+		bool escape = false;
+		for (char value : text.substr(start, end - start)) {
+			if (value == '\x1b') {
+				escape = true;
+			} else if (escape) {
+				if (value == 'm') {
+					escape = false;
+				}
+			} else {
+				result += value;
+			}
+		}
+		assert(!escape);
+		return result;
+	};
+	std::string standard = draw(Mode::Standard);
+	assert(standard.find('\x1b') == std::string::npos);
+	for (Mode mode : {Mode::Enemies, Mode::Impassable, Mode::Statuses}) {
+		std::string output = draw(mode);
+		assert(map(output) == map(standard));
+		assert(output.find("Режим карты: " + renderer.modeName(mode)) != std::string::npos);
+		assert(output.find("V: режим карты") != std::string::npos);
+		for (int row = 0; row < field.rows(); ++row) {
+			for (int column = 0; column < field.columns(); ++column) {
+				std::string styled = renderer.styledSymbol(field, factory, row, column, mode);
+				if (styled.find('\x1b') != std::string::npos) {
+					assert(styled.substr(styled.size() - 4) == "\x1b[0m");
+				}
+			}
+		}
+	}
+	assert(field.teleport(0, 4, 7));
+	assert(field.cell(4, 7).statusCount() == 0);
+	assert(field.robot(0).statusCount() == 1);
+	assert(renderer.styledSymbol(field, factory, 4, 7, Mode::Statuses) == "@");
+}
+
+void TestSuite::displayCommand() {
+	using Mode = ConsoleRenderer::Mode;
+	Game game(false);
+	assert(game.displayMode_ == Mode::Standard);
+	assert(game.command("1"));
+	game.field_.spendMovement(0, 3);
+	game.field_.addStatus(0, std::make_unique<Burning>(2));
+	game.field_.addStatus(0, std::make_unique<Overload>());
+	game.field_.addStatus(0, std::make_unique<ItemGrant>(Inventory::Item::Attack));
+	assert(game.field_.useItem(0, Inventory::Item::Attack));
+	auto state = [&]() {
+		std::ostringstream result;
+		result << game.turn() << ' ' << game.factory().active() << ' ' << game.field().robotCount();
+		for (int id = 0; id < game.field().robotCount(); ++id) {
+			const Robot& robot = game.field().robot(id);
+			result << ' ' << game.field().row(id) << ' ' << game.field().column(id)
+				<< ' ' << robot.health() << ' ' << robot.energy() << ' ' << robot.remainingMovement()
+				<< ' ' << robot.attack() << ' ' << robot.experience() << ' ' << robot.rank();
+			for (int index = 0; index < robot.statusCount(); ++index) {
+				result << ' ' << robot.status(index).name();
+			}
+			if (robot.inventory()) {
+				result << ' ' << robot.inventory()->attackTurns();
+				for (int type = 0; type < Inventory::ItemCount; ++type) {
+					result << ' ' << robot.inventory()->count(static_cast<Inventory::Item>(type));
+				}
+			}
+		}
+		for (int row = 0; row < game.field().rows(); ++row) {
+			for (int column = 0; column < game.field().columns(); ++column) {
+				const Cell& cell = game.field().cell(row, column);
+				result << ' ' << cell.robotId() << ' ' << cell.known() << ' ' << cell.statusCount();
+			}
+		}
+		return result.str();
+	};
+	std::string before = state();
+	for (Mode expected : {Mode::Enemies, Mode::Impassable, Mode::Statuses, Mode::Standard}) {
+		assert(game.command(expected == Mode::Enemies ? "V" : "v"));
+		assert(game.displayMode_ == expected);
+		assert(state() == before);
+	}
+	Game menus(false);
+	assert(menus.command("V"));
+	assert(menus.menu_.active());
+	assert(menus.command("2"));
+	assert(menus.command("i"));
+	assert(menus.command("V"));
+	assert(menus.inventoryMenu_.active());
+	assert(menus.command("0"));
+	assert(menus.command("r"));
+	assert(menus.command("v"));
+	assert(menus.command("1"));
+	assert(menus.command("v"));
+	assert(menus.command("1 6"));
+	assert(menus.field().column(0) == 6);
+	assert(menus.field().robot(0).energy() == 5);
+	assert(menus.turn() == 1);
+	assert(menus.displayMode_ == Mode::Standard);
+	std::string output = runGame(menus, "V\nQ\n");
+	assert(output.find("Режим карты: Подсветка врагов") != std::string::npos);
+}
+
 void TestSuite::run() {
 	ownership();
 	playerAbilities();
@@ -765,6 +924,8 @@ void TestSuite::run() {
 	inventoryResources();
 	inventoryBoost();
 	inventoryMenu();
+	displayModes();
+	displayCommand();
 	std::cout << "All mandatory lab2 tests passed\n";
 }
 

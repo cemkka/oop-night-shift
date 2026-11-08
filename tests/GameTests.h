@@ -18,5 +18,7 @@ private:
 	static void inventoryResources();
 	static void inventoryBoost();
 	static void inventoryMenu();
+	static void displayModes();
+	static void displayCommand();
 	static std::string runGame(Game& game, const std::string& input);
 };

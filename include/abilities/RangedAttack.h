@@ -14,5 +14,6 @@ private:
 	static constexpr int EnergyCost = 3;
 	static constexpr int InitialDamage = 20;
 	static constexpr int DamageIncrease = 10;
+	static constexpr int BurningDuration = 3;
 	int damage_ = InitialDamage;
 };

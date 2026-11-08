@@ -1,5 +1,6 @@
 #include "abilities/AreaAttack.h"
 #include "Field.h"
+#include "statuses/Overload.h"
 #include <algorithm>
 #include <limits>
 
@@ -30,6 +31,9 @@ bool AreaAttack::apply(Field& field, int robotId, int, int) {
 		if (id != robotId && field.robot(id).alive()
 			&& field.distanceTo(robotId, field.row(id), field.column(id)) <= radius_) {
 			field.damageFrom(robotId, id, Damage);
+			if (field.robot(id).alive()) {
+				field.addStatus(id, std::make_unique<Overload>());
+			}
 		}
 	}
 	return true;

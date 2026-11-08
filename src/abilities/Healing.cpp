@@ -1,5 +1,6 @@
 #include "abilities/Healing.h"
 #include "Field.h"
+#include "statuses/Shield.h"
 #include <algorithm>
 #include <limits>
 
@@ -16,13 +17,17 @@ bool Healing::apply(Field& field, int robotId, int, int) {
 		return false;
 	}
 	const Robot& robot = field.robot(robotId);
-	if (!robot.alive() || robot.health() == robot.maxHealth() || robot.energy() < energyCost()) {
+	if (!robot.alive() || robot.energy() < energyCost()) {
 		return false;
 	}
 	if (!field.spendEnergy(robotId, energyCost())) {
 		return false;
 	}
+	int excess = std::max(0, healing_ - (robot.maxHealth() - robot.health()));
 	field.repair(robotId, healing_);
+	if (excess > 0) {
+		field.addStatus(robotId, std::make_unique<Shield>(excess));
+	}
 	return true;
 }
 

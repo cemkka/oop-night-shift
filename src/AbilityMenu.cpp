@@ -75,8 +75,6 @@ void AbilityMenu::apply(int row, int column, std::string& message) {
 		message = "Недостаточно энергии.";
 	} else if (ability.kind() == Ability::Kind::Teleportation && !player.canMove()) {
 		message = "Замедление запрещает телепортацию.";
-	} else if (ability.kind() == Ability::Kind::Healing) {
-		message = "Лечение невозможно: здоровье уже полное.";
 	} else {
 		message = "Недопустимая цель: проверьте границы и радиус. Для удара нужен другой робот, для телепортации — свободная проходимая клетка.";
 	}

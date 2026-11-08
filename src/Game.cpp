@@ -137,6 +137,16 @@ bool Game::command(const std::string& input) {
 	if (lost() || (won() && !menu_.rewardsPending())) {
 		return false;
 	}
+	if (input == "v" || input == "V") {
+		switch (displayMode_) {
+		case ConsoleRenderer::Mode::Standard: displayMode_ = ConsoleRenderer::Mode::Enemies; break;
+		case ConsoleRenderer::Mode::Enemies: displayMode_ = ConsoleRenderer::Mode::Impassable; break;
+		case ConsoleRenderer::Mode::Impassable: displayMode_ = ConsoleRenderer::Mode::Statuses; break;
+		case ConsoleRenderer::Mode::Statuses: displayMode_ = ConsoleRenderer::Mode::Standard; break;
+		}
+		message_ = "Режим карты переключён.";
+		return true;
+	}
 	if (menu_.active()) {
 		menu_.handle(input, message_);
 		if (endTurnPending_ && !menu_.active()) {
@@ -207,7 +217,7 @@ bool Game::command(const std::string& input) {
 
 void Game::run() {
 	while (true) {
-		renderer_.draw(field_, factory_, turn_, message_);
+		renderer_.draw(field_, factory_, turn_, message_, displayMode_);
 		if (won() && !menu_.rewardsPending()) {
 			renderer_.message("Победа! Музей в безопасности.");
 			break;

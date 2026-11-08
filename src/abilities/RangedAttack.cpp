@@ -1,5 +1,6 @@
 #include "abilities/RangedAttack.h"
 #include "Field.h"
+#include "statuses/Burning.h"
 #include <algorithm>
 #include <limits>
 
@@ -22,6 +23,9 @@ bool RangedAttack::apply(Field& field, int robotId, int targetRow, int targetCol
 		return false;
 	}
 	field.damageFrom(robotId, target, damage_);
+	if (field.robot(target).alive()) {
+		field.addStatus(target, std::make_unique<Burning>(BurningDuration));
+	}
 	return true;
 }
 

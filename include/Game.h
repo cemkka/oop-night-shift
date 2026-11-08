@@ -36,6 +36,7 @@ private:
 	ConsoleRenderer renderer_;
 	AbilityMenu menu_;
 	InventoryMenu inventoryMenu_;
+	ConsoleRenderer::Mode displayMode_ = ConsoleRenderer::Mode::Standard;
 	int turn_ = FirstTurn;
 	bool endTurnPending_ = false;
 	std::string message_ = "Отключите станок и обезвредьте все взбунтовавшиеся экспонаты.";
