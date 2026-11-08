@@ -10,5 +10,9 @@ private:
 	static void commandsAndRewards();
 	static void enemies();
 	static void streams();
+	static void attacks();
+	static void statuses();
+	static void cells();
+	static void endings();
 	static std::string runGame(Game& game, const std::string& input);
 };

@@ -42,6 +42,71 @@ bool Robot::applyAbility(int index, Field& field, int id, int row, int column) {
 		&& abilities_[index]->apply(field, id, row, column);
 }
 
+int Robot::statusCount() const {
+	return static_cast<int>(std::count_if(statuses_.begin(), statuses_.end(),
+		[](const auto& status) { return !status->expired(); }));
+}
+
+const Status& Robot::status(int index) const {
+	if (index < 0) {
+		throw std::out_of_range("Invalid status index");
+	}
+	for (const auto& value : statuses_) {
+		if (!value->expired() && index-- == 0) {
+			return *value;
+		}
+	}
+	throw std::out_of_range("Invalid status index");
+}
+
+void Robot::removeExpiredStatuses() {
+	statuses_.erase(std::remove_if(statuses_.begin(), statuses_.end(),
+		[](const auto& value) { return value->expired(); }), statuses_.end());
+}
+
+void Robot::addStatus(std::unique_ptr<Status> value) {
+	if (!value) {
+		throw std::invalid_argument("Null status");
+	}
+	if (!alive() || value->expired()) {
+		return;
+	}
+	removeExpiredStatuses();
+	for (auto& existing : statuses_) {
+		if (existing->merge(*value)) {
+			return;
+		}
+	}
+	statuses_.push_back(std::move(value));
+}
+
+bool Robot::canMove() const {
+	return alive() && std::none_of(statuses_.begin(), statuses_.end(),
+		[](const auto& value) { return !value->expired() && value->blocksMovement(); });
+}
+
+bool Robot::prepareAbility() {
+	if (!alive()) {
+		return false;
+	}
+	bool cancelled = false;
+	for (auto& value : statuses_) {
+		if (!value->expired() && value->cancelsAbility()) {
+			cancelled = true;
+		}
+	}
+	removeExpiredStatuses();
+	return !cancelled;
+}
+
+void Robot::damageFrom(Robot& actor, int amount) {
+	bool wasAlive = alive();
+	takeDamage(amount);
+	if (wasAlive && !alive() && actor.side() != side_) {
+		actor.gainExperience(ExperiencePerDefeatedEnemy);
+	}
+}
+
 int Robot::health() const { return health_; }
 
 int Robot::maxHealth() const { return maxHealth_; }
@@ -98,15 +163,18 @@ bool Robot::interact(Robot& target) {
 	if (side_ == target.side_) {
 		target.repair(attack_);
 	} else {
-		target.takeDamage(attack_);
-		if (!target.alive()) {
-			gainExperience(ExperiencePerDefeatedEnemy);
-		}
+		target.damageFrom(*this, attack_);
 	}
 	return true;
 }
 
 void Robot::takeDamage(int amount) {
+	amount = std::max(0, amount);
+	for (auto& value : statuses_) {
+		if (!value->expired()) {
+			amount = value->absorbDamage(amount);
+		}
+	}
 	health_ -= std::min(health_, std::max(0, amount));
 }
 
@@ -140,9 +208,22 @@ int Robot::cappedAdd(int value, int amount) const {
 }
 
 void Robot::finishTurn() {
+	for (auto& value : statuses_) {
+		if (!value->expired()) {
+			value->finishTurn(*this);
+		}
+	}
+	removeExpiredStatuses();
 	if (alive()) {
 		energy_ += std::min(EnergyRestoredPerTurn, maxEnergy_ - energy_);
 	}
 }
 
-void Robot::beginTurn() { remainingMovement_ = speed_; }
+void Robot::beginTurn() {
+	remainingMovement_ = speed_;
+	for (auto& value : statuses_) {
+		if (!value->expired()) {
+			value->beginTurn();
+		}
+	}
+}

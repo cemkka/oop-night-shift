@@ -59,6 +59,21 @@ void ConsoleRenderer::draw(const Field& field, const RobotFactory& factory, int 
 		const Ability& ability = player.ability(index);
 		std::cout << index + 1 << ": " << ability.name() << " — " << ability.energyCost() << " энергии\n";
 	}
+	std::cout << "Статусы роботов в обзоре:\n";
+	for (int id = 0; id < field.robotCount(); ++id) {
+		if (!field.robot(id).alive() || !field.visible(Robot::PlayerId, field.row(id), field.column(id))) {
+			continue;
+		}
+		const Robot& robot = field.robot(id);
+		std::cout << "ID " << id << " (" << field.row(id) << ", " << field.column(id) << "): ";
+		if (robot.statusCount() == 0) {
+			std::cout << "нет";
+		}
+		for (int index = 0; index < robot.statusCount(); ++index) {
+			std::cout << (index == 0 ? "" : ", ") << robot.status(index).name();
+		}
+		std::cout << '\n';
+	}
 }
 
 void ConsoleRenderer::message(const std::string& text) const { std::cout << text << '\n'; }

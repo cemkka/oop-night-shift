@@ -1,5 +1,6 @@
 #pragma once
 #include "abilities/Ability.h"
+#include "statuses/Status.h"
 #include <memory>
 #include <vector>
 
@@ -24,6 +25,12 @@ public:
 	void addAbility(std::unique_ptr<Ability> ability);
 	void upgradeAbility(int index);
 	bool applyAbility(int index, Field& field, int id, int row, int column);
+	int statusCount() const;
+	const Status& status(int index) const;
+	void addStatus(std::unique_ptr<Status> status);
+	bool canMove() const;
+	bool prepareAbility();
+	void damageFrom(Robot& actor, int amount);
 	int health() const;
 	int maxHealth() const;
 	int energy() const;
@@ -65,4 +72,6 @@ private:
 	int experience_ = 0, experienceToNextRank_ = InitialExperienceToNextRank, rank_ = InitialRank;
 	int speed_, vision_, remainingMovement_;
 	std::vector<std::unique_ptr<Ability>> abilities_;
+	std::vector<std::unique_ptr<Status>> statuses_;
+	void removeExpiredStatuses();
 };

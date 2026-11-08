@@ -3,6 +3,8 @@
 
 class Healing : public Ability {
 public:
+	Kind kind() const override;
+	bool canUpgrade() const override;
 	std::string name() const override;
 	int energyCost() const override;
 	bool apply(Field& field, int robotId, int targetRow, int targetColumn) override;

@@ -5,10 +5,14 @@
 
 std::string Healing::name() const { return "Лечение"; }
 
+Ability::Kind Healing::kind() const { return Kind::Healing; }
+
+bool Healing::canUpgrade() const { return healing_ < std::numeric_limits<int>::max(); }
+
 int Healing::energyCost() const { return EnergyCost; }
 
 bool Healing::apply(Field& field, int robotId, int, int) {
-	if (robotId < 0 || robotId >= field.robotCount()) {
+	if (!field.prepareAbility(robotId)) {
 		return false;
 	}
 	const Robot& robot = field.robot(robotId);

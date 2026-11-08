@@ -1,3 +1,4 @@
+#include "AbilitiesTests.h"
 #include "abilities/Healing.h"
 #include "abilities/Teleportation.h"
 #include "Field.h"
@@ -13,7 +14,7 @@ static_assert(std::has_virtual_destructor_v<Ability>);
 static_assert(!std::is_abstract_v<Healing>);
 static_assert(!std::is_abstract_v<Teleportation>);
 
-std::vector<int> snapshot(const Field& field) {
+std::vector<int> AbilityTests::snapshot(const Field& field) {
 	std::vector<int> result;
 	for (int id = 0; id < field.robotCount(); ++id) {
 		const Robot& robot = field.robot(id);
@@ -31,14 +32,14 @@ std::vector<int> snapshot(const Field& field) {
 	return result;
 }
 
-void expectFailure(Ability& ability, Field& field, int id, int row, int column) {
+void AbilityTests::expectFailure(Ability& ability, Field& field, int id, int row, int column) {
 	const auto before = snapshot(field);
 	assert(!ability.apply(field, id, row, column));
 	assert(before == snapshot(field));
 }
 
-void testHealing() {
-	Field field(12, 12);
+void AbilityTests::testHealing() {
+	Field field(12, 12, false);
 	int id = field.addRobot(Robot(Robot::Side::Friendly), 1, 1);
 	int other = field.addRobot(Robot(Robot::Side::Friendly), 1, 2);
 	field.takeDamage(id, 50);
@@ -64,8 +65,8 @@ void testHealing() {
 	expectFailure(healing, field, field.robotCount(), 1, 1);
 }
 
-void testTeleportation() {
-	Field field(12, 12);
+void AbilityTests::testTeleportation() {
+	Field field(12, 12, false);
 	int id = field.addRobot(Robot(Robot::Side::Friendly), 1, 1);
 	field.addRobot(Robot(Robot::Side::Enemy), 2, 1);
 	// A complete wall blocks every ordinary path to the destination.
@@ -114,8 +115,8 @@ void testTeleportation() {
 	expectFailure(teleportation, field, id, 3, 9);
 }
 
-void testDeadRobotsAndEnergy() {
-	Field field(12, 12);
+void AbilityTests::testDeadRobotsAndEnergy() {
+	Field field(12, 12, false);
 	int id = field.addRobot(Robot(Robot::Side::Friendly), 1, 1);
 	Healing healing;
 	Teleportation teleportation;
@@ -141,8 +142,8 @@ void testDeadRobotsAndEnergy() {
 	assert(!ability->name().empty());
 }
 
-void testMovementPreserved() {
-	Field field(12, 12);
+void AbilityTests::testMovementPreserved() {
+	Field field(12, 12, false);
 	int id = field.addRobot(Robot(Robot::Side::Friendly), 1, 1);
 	field.takeDamage(id, 30);
 	int movement = field.robot(id).remainingMovement();
@@ -154,10 +155,14 @@ void testMovementPreserved() {
 	assert(field.robot(id).remainingMovement() == movement);
 }
 
-int main() {
+void AbilityTests::run() {
 	testHealing();
 	testTeleportation();
 	testDeadRobotsAndEnergy();
 	testMovementPreserved();
 	std::cout << "All ability tests passed\n";
+}
+
+int main() {
+	AbilityTests::run();
 }
